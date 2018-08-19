@@ -2,7 +2,7 @@
 // SwitchDoc Labs March 2017
 //
 
-#define SOFTWAREVERSION 002
+#define SOFTWAREVERSION 004
 
 #include <SoftwareSerial.h>
 
@@ -327,6 +327,8 @@ void setup()
 
   Serial.begin(115200);  // Debugging only
   Serial.println("-------Receive Started---------");
+  Serial.print("Software Version:");
+  Serial.println(SOFTWAREVERSION);
 
   if (!rf95.init())
   {
@@ -344,6 +346,9 @@ void setup()
   //rf95.setTxPower(13, false);
 
   rf95.setFrequency(434.0);
+
+  rf95.setModemConfig(RH_RF95::Bw31_25Cr48Sf512);
+   //rf95.setModemConfig(RH_RF95::Bw125Cr48Sf4096);
 
   //rf95.setTxPower(5);
 
@@ -393,7 +398,7 @@ void loop()
   delay(1000);
 
   //if (rf95.available())           // if date is coming from software serial port
-   if (rf95.waitAvailableTimeout(3000))           // if date is coming from software serial port
+   if (rf95.waitAvailableTimeout(6000))           // if date is coming from software serial port
 
   {
 
