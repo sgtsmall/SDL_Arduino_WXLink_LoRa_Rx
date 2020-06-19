@@ -2,7 +2,7 @@
 // SwitchDoc Labs March 2017
 //
 
-#define SOFTWAREVERSION 004
+#define SOFTWAREVERSION 005
 
 #include <SoftwareSerial.h>
 
@@ -22,7 +22,7 @@ Crc16 crc;
 // Singleton instance of the radio driver
 
 SoftwareSerial SoftSerial(8, 9); // TX, RX
-RH_RF95 rf95(SoftSerial);
+RH_RF95 <SoftwareSerial>rf95(SoftSerial);
 
 byte buffer[75];
 byte lastGoodMessage[64];
@@ -347,8 +347,10 @@ void setup()
 
   rf95.setFrequency(434.0);
 
-  rf95.setModemConfig(RH_RF95::Bw31_25Cr48Sf512);
-   //rf95.setModemConfig(RH_RF95::Bw125Cr48Sf4096);
+  int Bw31_25Cr48Sf512 = 2;
+
+  rf95.setModemConfig(RH_RF95<SoftwareSerial>::ModemConfigChoice(Bw31_25Cr48Sf512));
+  //rf95.setModemConfig(RH_RF95::Bw125Cr48Sf4096);
 
   //rf95.setTxPower(5);
 
@@ -398,7 +400,7 @@ void loop()
   delay(1000);
 
   //if (rf95.available())           // if date is coming from software serial port
-   if (rf95.waitAvailableTimeout(6000))           // if date is coming from software serial port
+  if (rf95.waitAvailableTimeout(6000))           // if date is coming from software serial port
 
   {
 
@@ -574,6 +576,3 @@ void resetSoftSerialBuffer()
     }
   */
 }
-
-
-
