@@ -1,6 +1,7 @@
 // SDL_Arduino_WXLink_LoRa_Rx
 // SwitchDoc Labs March 2017
 //
+//Modified VK2PSF add Si11445 Light/IR/UV
 
 #define SOFTWAREVERSION 005
 
@@ -25,13 +26,13 @@ SoftwareSerial SoftSerial(8, 9); // TX, RX
 RH_RF95 <SoftwareSerial>rf95(SoftSerial);
 
 byte buffer[75];
-byte lastGoodMessage[64];
+byte lastGoodMessage[96];
 byte buflen = 0;
 
 long consecutiveGoodMessages;
 long lastGoodMessageID;
-long goodMessages;
-long badMessages;
+long goodMessages = 0;
+long badMessages = 0;
 
 int toggle = 0;
 
@@ -144,24 +145,24 @@ int interpretBuffer(byte *buffer, int buflen)
   }
   Serial.println("Start Bytes Found");
 
-  if (buflen != 63)
+  if (buflen != 75)
   {
     return 2; // buflen wrong
   }
   unsigned short checksumValue;
 
   // calculate checksum
-  checksumValue = crc.XModemCrc(buffer, 0, 59);
+  checksumValue = crc.XModemCrc(buffer, 0, 71);
   Serial.print("crc = 0x");
   Serial.println(checksumValue, HEX);
 
-  if ((checksumValue >> 8) != buffer[61])
+  if ((checksumValue >> 8) != buffer[73])
   {
     // bad checksum
     return 3;  // bad checksum
 
   }
-  if ((checksumValue & 0xFF) != buffer[62])
+  if ((checksumValue & 0xFF) != buffer[74])
   {
     // bad checksum
     return 3;  // bad checksum
@@ -176,8 +177,8 @@ int interpretBuffer(byte *buffer, int buflen)
 
   Serial.print(F("Protocol="));
   Serial.println(buffer[2]);
-
-  Serial.print(F("TimeSinceReboot(msec)="));
+// time stamps are actually decisecond 100 milisecond or 1/10 of sec
+  Serial.print(F("TimeSinceReboot(dsec)="));
   Serial.println(convert4BytesToLong(buffer, 3));
 
   Serial.print(F("Wind Direction="));
@@ -220,17 +221,29 @@ int interpretBuffer(byte *buffer, int buflen)
   Serial.print(F("SolarPanelCurrent="));
   Serial.println(convert4BytesToFloat(buffer, 49));
 
-  Serial.print(F("AuxA="));
+  Serial.print(F("LoadVoltage="));
   Serial.println(convert4BytesToFloat(buffer, 53));
 
   Serial.print(F("Message ID="));
   Serial.println(convert4BytesToLong(buffer, 57));
 
+  Serial.print(F("VisLevel="));
+  Serial.print(convert4BytesToLong(buffer, 61));
+  Serial.print(";");
+
+  Serial.print(F("IRLevel="));
+  Serial.print(convert4BytesToLong(buffer, 65));
+  Serial.print(";");
+
+  Serial.print(F("UVLevel="));
+  Serial.print(convert4BytesToLong(buffer, 69));
+  Serial.print(";");
+
 
   Serial.print(F("Checksum High=0x"));
-  Serial.println(buffer[61], HEX);
+  Serial.println(buffer[73], HEX);
   Serial.print(F("Checksum Low=0x"));
-  Serial.println(buffer[62], HEX);
+  Serial.println(buffer[74], HEX);
 
 
 
@@ -268,6 +281,16 @@ void I2CrequestEvent() {
     for (i = 0; i < 32; i++)
     {
       myBuffer[i] = lastGoodMessage[i + 32];
+    }
+    Wire.write(myBuffer, 32);
+    return;
+  }
+  if (command == 2)
+  {
+
+    for (i = 0; i < 32; i++)
+    {
+      myBuffer[i] = lastGoodMessage[i + 64];
     }
     Wire.write(myBuffer, 32);
     return;
@@ -358,7 +381,7 @@ void setup()
 
   consecutiveGoodMessages = 0;
   int i;
-  for (i = 0; i < 64; i++)
+  for (i = 0; i < 76; i++) //64
   {
     lastGoodMessage[i] = 0;
 
@@ -398,7 +421,7 @@ void loop()
 {
 
   delay(1000);
-
+  Serial.println("Loop");
   //if (rf95.available())           // if date is coming from software serial port
   if (rf95.waitAvailableTimeout(6000))           // if date is coming from software serial port
 
@@ -460,11 +483,11 @@ void loop()
           {
             consecutiveGoodMessages++;
           }
-          /*Serial.print(F("Current Message ID="));
+          Serial.print(F("Current Message ID="));
             Serial.print(lastGoodMessageID);
             Serial.print(F(" Consecutive Good Messages ="));
             Serial.println(consecutiveGoodMessages);
-          */
+
           digitalWrite(LED, HIGH);
           delay(100);
           digitalWrite(LED, LOW);
@@ -472,12 +495,12 @@ void loop()
           // disable interrupts
           //noInterrupts();
           int i;
-          for (i = 0; i < 63; i++)
+          for (i = 0; i < 96; i++)
           {
             lastGoodMessage[i] = buffer[i];
 
           }
-          lastGoodMessage[63] = 0;
+          lastGoodMessage[96] = 0;
 
           // enable interrupts
           //interrupts();
@@ -512,7 +535,7 @@ void loop()
         break;
       default:
 
-        //Serial.print(F("Bad Message - Unknown Return Code ="));
+        Serial.print(F("Bad Message - Unknown Return Code ="));
         Serial.println(interpretResult);
         badMessages++;
         consecutiveGoodMessages = 0;
